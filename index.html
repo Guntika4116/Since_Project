@@ -35,6 +35,21 @@
                             </div>
                             
                             <div class="row">
+                                <div>
+                                    <label class="form-label" style="font-weight: bold; margin-right: 15px;">คำนำหน้า</label>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="title" value="นาย" required>
+                                        <label class="form-check-label">นาย</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="title" value="นาง">
+                                        <label class="form-check-label">นาง</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="title" value="นางสาว">
+                                        <label class="form-check-label">นางสาว</label>
+                                    </div>
+                                </div>
                                 <div class="col-12 col-md-6 mb-3">
                                     <label class="form-label">ชื่อ</label>
                                     <input type="text" class="form-control" name="first_name" required>
@@ -59,7 +74,12 @@
                             <div class="section-title">ส่วนที่ 2: ข้อมูลธุรกิจ</div>
                             <div class="mb-3"><label class="form-label">ชื่อกิจการ</label><input type="text" class="form-control" name="company" required></div>
                             <div class="mb-3"><label class="form-label">จังหวัดที่ตั้งกิจการ</label><input type="text" class="form-control" name="province" required></div>
-                            <div class="mb-3"><label class="form-label">เลขทะเบียนกิจการ</label><input type="text" class="form-control" name="tax_id" required></div>
+                            <div class="mb-3">
+                                <label class="form-label">เลขทะเบียนกิจการ</label>
+                                <input type="text" class="form-control" id="tax_id" name="tax_id"
+                                       pattern="^[0-9]{12,13}$" inputmode="numeric" maxlength="13" minlength="12" required>
+                                <div class="invalid-feedback">กรุณากรอกเลขทะเบียนกิจการ 12 หรือ 13 หลัก (เฉพาะตัวเลข)</div>
+                            </div>
 
                             <div class="mb-3">
                                 <label class="form-label d-block">เลข SME One ID</label>
@@ -72,7 +92,9 @@
                                     <label class="form-check-label">มี</label>
                                 </div>
                                 <div id="sme_input_div" class="mt-2" style="display: none;">
-                                    <input type="text" class="form-control" name="sme_number" placeholder="กรอกเลข SME One ID">
+                                    <input type="text" class="form-control" id="sme_number" name="sme_number"
+                                           pattern="^[0-9]{12,13}$" inputmode="numeric" maxlength="13" minlength="12" placeholder="กรอกเลข SME One ID">
+                                    <div class="invalid-feedback">กรุณากรอกเลข SME One ID 12 หรือ 13 หลัก (เฉพาะตัวเลข)</div>
                                 </div>
                             </div>
 
@@ -122,7 +144,21 @@
     </div>
 
     <script>
-        function toggleSme(show) { document.getElementById('sme_input_div').style.display = show ? 'block' : 'none'; }
+        function toggleSme(show) {
+            const div = document.getElementById('sme_input_div');
+            const input = document.getElementById('sme_number');
+            if (show) {
+                div.style.display = 'block';
+                if (input) input.required = true;
+            } else {
+                div.style.display = 'none';
+                if (input) {
+                    input.required = false;
+                    input.value = '';
+                    input.classList.remove('is-invalid');
+                }
+            }
+        }
         
         function toggleSourceOther(value) {
             const otherDiv = document.getElementById('source_other_div');
@@ -137,8 +173,43 @@
             }
         }
 
+        // เพิ่มฟังก์ชันตรวจสอบเลขทะเบียนและแสดงสถานะ
+        function validateTaxId() {
+            const el = document.getElementById('tax_id');
+            const ok = /^[0-9]{12,13}$/.test(el.value.trim());
+            if (!ok && el.value.trim() !== '') {
+                el.classList.add('is-invalid');
+            } else {
+                el.classList.remove('is-invalid');
+            }
+            return ok;
+        }
+
+        // ตรวจสอบ SME One ID (12-13 หลัก) และแสดง is-invalid
+        function validateSmeNumber() {
+            const el = document.getElementById('sme_number');
+            if (!el) return true;
+            const ok = /^[0-9]{12,13}$/.test(el.value.trim());
+            if (!ok && el.value.trim() !== '') el.classList.add('is-invalid'); else el.classList.remove('is-invalid');
+            return ok;
+        }
+
+        // ตรวจแบบเรียลไทม์เมื่อผู้ใช้พิมพ์
+        document.getElementById('tax_id').addEventListener('input', validateTaxId);
+        const smeEl = document.getElementById('sme_number');
+        if (smeEl) smeEl.addEventListener('input', validateSmeNumber);
+
+        // แก้ submit handler ให้ตรวจสอบความถูกต้องรวม SME ด้วย
         document.getElementById('regForm').addEventListener('submit', function (e) {
             e.preventDefault();
+
+            const smeShown = document.getElementById('sme_input_div').style.display === 'block';
+
+            if (!this.checkValidity() || !validateTaxId() || (smeShown && !validateSmeNumber())) {
+                this.classList.add('was-validated');
+                return;
+            }
+
             const btn = document.getElementById('submitBtn');
             const status = document.getElementById('statusMsg');
 
@@ -150,6 +221,7 @@
             const formData = {
                 "TIME_STAMP": new Date().toLocaleString('th-TH'),
                 "ID_Card": this.id_card.value,
+                "PREFIX": this.title.value,
                 "FIRST_NAME": this.first_name.value,
                 "LAST_NAME": this.last_name.value,
                 "PHONE": this.phone.value,
