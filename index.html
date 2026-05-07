@@ -223,6 +223,10 @@
     </div>
 
     <script>
+        function showNotification(message, type) {
+            alert(message);
+        }
+
         function toggleSme(show) {
             const div = document.getElementById('sme_input_div');
             const input = document.getElementById('sme_number');
@@ -352,9 +356,9 @@
                     regForm.style.display = 'none';
                     showSuccessPopup();
                 })
-                .catch((err) => {
-                    console.error(err);
-                    alert("เกิดข้อผิดพลาด");
+                .catch((error) => {
+                    // กรณีเชื่อมต่อเน็ตไม่ได้ หรือ API ล่มไปเลย
+                    showNotification("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่ภายหลัง", "error");
                     btn.disabled = false;
                     status.style.display = 'none';
                 });
